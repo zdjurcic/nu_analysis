@@ -1,0 +1,12 @@
+{
+  "total_spills": 2368,
+  "total_nu": 9619,
+  "total_ixn_reco": 3212,
+  "fiducial_reco": 868,
+  "fiducial_truth": 205,
+  "cc_fid": 126,
+  "nc_fid": 36,
+  "track": 579,
+  "minerva": 163,
+  "matched": 162
+}

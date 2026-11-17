@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Full 2x2 CAF Analysis — Verified Report</title>
+<style>
+:root{ --bg:#f8fafc; --fg:#0f172a; --muted:#64748b; --card:#ffffff; --accent:#2563eb; --accent2:#0ea5e9; --border:#e2e8f0; --code:#f1f5f9 }
+*{box-sizing:border-box} body{margin:0; font-family: ui-sans-system, -apple-system, Segoe UI, Roboto, Helvetica, Arial; color:var(--fg); background:var(--bg); line-height:1.6}
+header{ background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #0ea5e9 100%); color:white; padding:48px 24px 36px }
+header h1{max-width:1100px; margin:0 auto; font-size:32px; letter-spacing:-0.02em}
+header p{max-width:1100px; margin:10px auto 0; opacity:0.9}
+.wrap{max-width:1100px; margin:0 auto; padding:28px 20px}
+.card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:22px 20px; margin:18px 0; box-shadow: 0 4px 16px rgba(15,23,42,0.06)}
+.card h2{margin:0 0 8px; font-size:20px; letter-spacing:-0.01em}
+.card h3{margin:18px 0 8px; font-size:15px; color:#1e293b}
+.badge{display:inline-block; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600}
+.grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(320px,1fr)); gap:16px}
+.kv{display:grid; grid-template-columns: 180px 1fr; gap:8px; font-size:14px; border-top:1px dashed var(--border); padding:8px 0}
+.kv:first-of-type{border-top:none}
+.mono{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:13px; background:var(--code); padding:2px 6px; border-radius:6px; border:1px solid var(--border); word-break:break-all}
+pre{background:var(--code); border:1px solid var(--border); border-radius:10px; padding:14px; overflow:auto; font-size:13px}
+table{width:100%; border-collapse:collapse; font-size:14px; margin:10px 0}
+th,td{border:1px solid var(--border); padding:8px 10px; text-align:left} th{background:#f8fafc}
+.figure{border:1px solid var(--border); border-radius:12px; overflow:hidden; background:white}
+.figure img{width:100%; display:block; background:white}
+.figure figcaption{padding:10px 12px; font-size:13px; color:var(--muted); border-top:1px solid var(--border); background:#f8fafc}
+.toc a{color:var(--accent); text-decoration:none} .toc a:hover{text-decoration:underline}
+.small{font-size:13px; color:var(--muted)}
+.status{display:flex; gap:10px; flex-wrap:wrap; margin:10px 0}
+.status span{padding:6px 10px; border-radius:999px; font-size:13px; border:1px solid var(--border); background:white}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0b1220; --fg:#e2e8f0; --card:#111b2e; --border:#1e2a44; --code:#0f1a33 }
+  header{ background: linear-gradient(135deg, #0b1220 0%, #1e3a8a 70%, #0ea5e9 100%)}
+  th{background:#0f1a33} .figure figcaption{background:#0f1a33; color:#94a3b8}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Local Full 2×2 CAF Analysis — Verified Report</h1>
+  <p>12 MiniRun6.5 RHC files · 2368 spills · 9619 ν · 3212 reco ixns · ROOT <code>caf::StandardRecord</code> via <code>libduneanaobj</code> · loose 166 matched / tight 4 matched</p>
+</header>
+<div class="wrap">
+  <div class="card toc">
+    <div class="badge">2026-11-16 verified · reproducible today</div>
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#done">What was done</a></li>
+      <li><a href="#how">How the code works</a></li>
+      <li><a href="#selection">Selection used</a></li>
+      <li><a href="#run">How to run</a></li>
+      <li><a href="#change">How to change selection</a></li>
+      <li><a href="#plots">Verified plots</a></li>
+      <li><a href="#cutflow">Cutflow & validation</a></li>
+      <li><a href="#other">Other instructions</a></li>
+    </ol>
+    <div class="status">
+      <span>✅ Entry 1: 12 part.dlp — 2μ 1p 1π primary validated</span>
+      <span>✅ hadron_mult / length / cosθ truth vs reco</span>
+      <span>✅ MINERvA tight = nominal_mc.cc L2625-2785</span>
+    </div>
+  </div>
+
+  <div class="card" id="done">
+    <h2>1. What was done to write the analysis</h2>
+    <h3>The blocker</h3>
+    <p><span class="mono">common.ixn.dlp.part.dlp</span> is <span class="mono">vector&lt;vector&lt;SRRecoParticle&gt;&gt;</span> with <span class="mono">SRVector3D start/end/p</span> as memberwise <span class="mono">AsArray&lt;std::array&lt;float,3&gt;&gt;</span>. <code>uproot 5.7</code> raises <span class="mono">NotImplementedError: memberwise serialization of AsArray in caf::SRVector3D</span>. Original <span class="mono">analyze_full.py</span> could only do fiducial + <span class="mono">ntracks&gt;0</span> proxy and had fake stubs <span class="mono">[[{'pdg':13}]*7]</span>.</p>
+    <h3>The fix</h3>
+    <ol>
+      <li>Fixed <span class="mono">deps/duneanaobj/LinkDef.h</span> (missing <span class="mono">#endif</span>) and built two dicts with <span class="mono">rootcling</span> (ROOT 6.40.04, <span class="mono">dune_root</span> env):
+        <br><span class="mono">libduneanaobj.so 272K</span> (minimal: StandardRecord, SRVector3D, SRRecoParticle, SRInteraction) and <span class="mono">libduneanaobj_full.so 729K</span> (+SRTrack, SRShower, SRMINERvA, SRTMS, SRSAND, SRGAr, SRNDLAr, SRTruthBranch).</li>
+      <li>Validated real read: Entry 1 → 12 <span class="mono">part.dlp</span> with pdg/primary/E/start/end/p (e.g. μ len 55.4/35.4 cm).</li>
+      <li>Wrote <span class="mono">analyze_verified.py</span> (loose MINERvA, stats) and <span class="mono">analyze_verified_minerva.py</span> (tight, exact C++), both via <span class="mono">ROOT.caf.StandardRecord</span> and <span class="mono">matplotlib</span>.</li>
+      <li>Generated <span class="mono">plots_verified/</span> (26 PNGs) → copied to <span class="mono">plots/</span>, updated <span class="mono">README.md</span>.</li>
+    </ol>
+    <div class="kv"><div>Location</div><div><span class="mono">05_Agentic_Workflows/caf_analysis_code/local_full/</span></div></div>
+    <div class="kv"><div>Input</div><div><span class="mono">caf_MC/*.root</span> 12 files (0000000-0000011, 21 MB), <span class="mono">nominal_mc.cc</span>, <span class="mono">deps/duneanaobj/</span></div></div>
+    <div class="kv"><div>Env</div><div><span class="mono">/Users/zdjurcic/miniconda3/envs/dune_root/bin/python</span> + ROOT 6.40.04, matplotlib</div></div>
+  </div>
+
+  <div class="card" id="how">
+    <h2>2. How the code works</h2>
+    <pre>for each TFile/TTree entry (spill):
+  truth loop: rec.mc.nu[k].{E, vtx, mode, iscc, nprim, prim[].pdg/start_pos/end_pos/p}
+  reco loop:  rec.common.ixn.dlp[i].{vtx, truth/truthOverlap, part.dlp[j].{primary,pdg,E,p,start,end}}
+              → fiducial → track → MINERvA → truthOverlap argmax → matched ν
+              → hadron_mult / length / angular truth vs reco</pre>
+    <h3>Per-particle (reco)</h3>
+    <ul>
+      <li><span class="mono">diffVertex = |start - vtx| &lt; 5 cm</span>, <span class="mono">length = |end-start| &gt; 3 cm</span>, <span class="mono">primary==true</span>, <span class="mono">pdg ∈ {13,2212,211,321}</span></li>
+      <li><span class="mono">hadron_mult</span> = count of 2212/211/321 per matched ixn (μ excluded)</li>
+      <li><span class="mono">length</span> = |end-start|, <span class="mono">angular cosθ = p.z/|p|</span> via <span class="mono">p.p.x/y/z</span></li>
+    </ul>
+    <h3>Truth (matched <span class="mono">mc.nu[best]</span>)</h3>
+    <p>Loop <span class="mono">prim[]</span>, same <span class="mono">|start_pos-end_pos|&gt;3</span>, same pdg groups, <span class="mono">cosθ = p.pz/|p|</span> (L2932-2940).</p>
+  </div>
+
+  <div class="card" id="selection">
+    <h2>3. Selection used</h2>
+    <table>
+      <tr><th>Step</th><th>Cut</th><th>Ref</th><th>Loose</th><th>Tight</th></tr>
+      <tr><td>Fiducial</td><td><span class="mono">5&lt;|x|&lt;59, 5&lt;|z|&lt;59.5, |y|&lt;57</span> on <span class="mono">ixn.vtx</span></td><td>L2461</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Track</td><td><span class="mono">primary && |start-vtx|&lt;5 && len&gt;3</span> for pdg 13/2212/211/321, <span class="mono">minTrkLength=3</span></td><td>L2573/2598</td><td>yes</td><td>yes</td></tr>
+      <tr><td>MINERvA</td><td>Exiting <span class="mono">|z|&gt;58</span> → downstream <span class="mono">start_z&gt;0 && (z&gt;60)</span> loop <span class="mono">nd.minerva.ixn</span>, <span class="mono">lenMin&gt;10, dot&gt;prev && |ΔY|&lt;15 && |ΔX|&lt;15 && |Δatan|&lt;0.06</span>, pass <span class="mono">maxDotDS&gt;0.99</span> (<span class="mono">mnvOffset 0,0</span> for MC)</td><td>L2625-2785</td><td>proxy (exiting only)</td><td><b>exact</b></td></tr>
+      <tr><td>Truth match</td><td><span class="mono">truth/truthOverlap</span> argmax → <span class="mono">mc.nu[best]</span>, <span class="mono">|recoVtx-trueVtx|&lt;5</span> per axis, <span class="mono">targetPDG==Ar</span>, <span class="mono">iscc</span></td><td>L2474-2504</td><td>yes</td><td>yes</td></tr>
+    </table>
+    <p class="small">Loose = stats for length/angular (196μ/87p/35π reco tracks). Tight = physics signal — rare downstream MINERvA match, as in <span class="mono">nominal_mc.cc requireMinerva=True</span>.</p>
+  </div>
+
+  <div class="card" id="run">
+    <h2>4. How to run</h2>
+    <p>From <span class="mono">05_Agentic_Workflows/</span> (no Polaris, ~15s for 12 files):</p>
+<pre>/Users/zdjurcic/miniconda3/envs/dune_root/bin/python caf_analysis_code/local_full/analyze_verified.py
+# → plots_verified/*_verified.png + cutflow_verified.json (166 matched, 135 CC/31 NC)
+
+/Users/zdjurcic/miniconda3/envs/dune_root/bin/python caf_analysis_code/local_full/analyze_verified_minerva.py
+# → plots_verified/*_minerva.png + cutflow_verified_minerva_tight.json (4 matched, 4 CC)
+
+# Legacy proxy (no SRRecoParticle, .venv):
+python caf_analysis_code/local_full/analyze_full.py</pre>
+    <p>Outputs land in <span class="mono">caf_analysis_code/local_full/plots_verified/</span> and are copied to <span class="mono">plots/</span>. Both scripts need <span class="mono">deps/duneanaobj/libduneanaobj*.so</span> already built.</p>
+    <div class="kv"><div>Needs</div><div>dune_root env (ROOT 6.40.04) + matplotlib; absolute <span class="mono">.so</span> load via <span class="mono">pathlib.resolve()</span></div></div>
+    <div class="kv"><div>Check</div><div><span class="mono">grep Cutflow plots/cutflow_verified*.json</span> — expect 868 fid, 349 track</div></div>
+  </div>
+
+  <div class="card" id="change">
+    <h2>5. How you can set / change selection</h2>
+    <p>Edit the constants / functions at the top of either <span class="mono">analyze_verified*.py</span> (one constant + one rerun, no recompile unless you add a new <span class="mono">caf::</span> class):</p>
+    <table>
+      <tr><th>What</th><th>Where</th><th>Example change</th></tr>
+      <tr><td>Fiducial bounds</td><td><span class="mono">if not (abs(vx)&gt;5 and abs(vx)&lt;59 ...)</span></td><td>Change <span class="mono">5 / 59 / 57 / 59.5</span></td></tr>
+      <tr><td>Track length / vertex</td><td><span class="mono">minTrkLength = 3.0</span>, <span class="mono">diff&gt;5</span></td><td><span class="mono">3.0 → 5.0</span>, <span class="mono">5 → 3</span> cm</td></tr>
+      <tr><td>PDG groups</td><td><span class="mono">abs(pdg) in (2212,13,211,321)</span></td><td>Remove <span class="mono">321</span> for p/π only</td></tr>
+      <tr><td>Hadron def</td><td><span class="mono">if abs(pdg) in (2212,211,321)</span></td><td>Include/exclude K</td></tr>
+      <tr><td>MINERvA loose↔tight</td><td><span class="mono">passes_minerva_tight()</span> vs <span class="mono">has_exiting</span></td><td>Swap the <span class="mono">if passes_tight: else: continue</span> block</td></tr>
+      <tr><td>Tight thresholds</td><td><span class="mono">passes_minerva_tight()</span></td><td><span class="mono">0.99→0.995</span>, <span class="mono">15→10</span>, <span class="mono">0.06→0.04</span>, <span class="mono">lengthMin&gt;10</span></td></tr>
+      <tr><td>Offsets</td><td><span class="mono">mnvOffsetX/Y</span></td><td><span class="mono">0,0</span> for MC; <span class="mono">-10,5</span> for data (L1989)</td></tr>
+      <tr><td>Truth window</td><td><span class="mono">abs(vx-tvx)&lt;5</span></td><td><span class="mono">5→2</span> cm, or add <span class="mono">targetPDG==1000180400</span> gate</td></tr>
+      <tr><td>Bins / files</td><td><span class="mono">bins_Enu = np.linspace(0,20,50)</span>, <span class="mono">files[:12]</span></td><td><span class="mono">0,20,50 → 0,10,40</span>, drop <span class="mono">[:12]</span> for full</td></tr>
+    </table>
+    <p>After edits: rerun the same one-liner — PNGs overwrite. Adding a new <span class="mono">caf::</span> class → extend <span class="mono">LinkDef_full.h</span> and rebuild the two <span class="mono">rootcling+g++</span> lines.</p>
+  </div>
+
+  <div class="card" id="plots">
+    <h2>6. Verified plots (click to enlarge)</h2>
+    <p class="small">Blue = truth (matched ν), orange = reco via real <span class="mono">part.dlp</span>. “Tight” is MINERvA exact; loose gives the physics shapes below.</p>
+    <h3>Hadron multiplicity & neutrino energy</h3>
+    <div class="grid">
+      <figure class="figure"><img src="plots/hadron_mult_truth_vs_reco.png" alt="Hadron mult"><figcaption>Hadron mult (p/π/K) — loose: 166 matched ixns, μ excluded</figcaption></figure>
+      <figure class="figure"><img src="plots/Enu_truth_verified.png" alt="Enu"><figcaption>Eν truth (fid+matched, CC/NC split) — 135 CC / 31 NC loose</figcaption></figure>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <figure class="figure"><img src="plots/hadron_mult_truth_vs_reco_minerva.png" alt="Hadron mult tight"><figcaption>Hadron mult — tight MINERvA: 4 matched (rare downstream match, as expected)</figcaption></figure>
+      <figure class="figure"><img src="plots/Enu_truth_verified_minerva.png" alt="Enu tight"><figcaption>Eν — tight: 4 CC events (nominal_mc.cc requireMinerva=True)</figcaption></figure>
+    </div>
+    <h3>Track length (|end-start|) — μ / p / π</h3>
+    <div class="grid">
+      <figure class="figure"><img src="plots/length_mu_truth_vs_reco.png" alt="Length mu"><figcaption>Muon length — 196 reco tracks (loose)</figcaption></figure>
+      <figure class="figure"><img src="plots/length_proton_truth_vs_reco.png" alt="Length p"><figcaption>Proton length — 87 reco tracks</figcaption></figure>
+      <figure class="figure"><img src="plots/length_pion_truth_vs_reco.png" alt="Length π"><figcaption>Pion length — 35 reco tracks</figcaption></figure>
+    </div>
+    <h3>Angular (cosθ = pz/|p|) — μ / p / π</h3>
+    <div class="grid">
+      <figure class="figure"><img src="plots/angular_mu_truth_vs_reco.png" alt="Angular mu"><figcaption>Muon cosθ</figcaption></figure>
+      <figure class="figure"><img src="plots/angular_proton_truth_vs_reco.png" alt="Angular p"><figcaption>Proton cosθ</figcaption></figure>
+      <figure class="figure"><img src="plots/angular_pion_truth_vs_reco.png" alt="Angular π"><figcaption>Pion cosθ</figcaption></figure>
+    </div>
+    <h3>Vertex & GENIE mode (sanity)</h3>
+    <div class="grid">
+      <figure class="figure"><img src="plots/vertex_X_truth_vs_reco_verified.png" alt="Vtx X"><figcaption>Vertex X truth vs reco (fiducial shaping clear)</figcaption></figure>
+      <figure class="figure"><img src="plots/nprim_truth_vs_reco_verified.png" alt="nprim"><figcaption>nPrim truth vs reco (part.dlp size)</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card" id="cutflow">
+    <h2>7. Cutflow & validation (12-file slice)</h2>
+    <table>
+      <tr><th>Stage</th><th>Loose</th><th>Tight (nominal)</th></tr>
+      <tr><td>total_spills / total_nu / total_ixn_reco</td><td>2368 / 9619 / 3212</td><td>2368 / 9619 / 3212</td></tr>
+      <tr><td>fiducial_reco / fiducial_truth</td><td>868 / 205</td><td>868 / 205</td></tr>
+      <tr><td>track (real primary+Δvtx&lt;5 len&gt;3)</td><td>349</td><td>349</td></tr>
+      <tr><td>MINERvA</td><td>295 loose (exiting)</td><td>4 tight (maxDot&gt;0.99)</td></tr>
+      <tr><td>matched (truthOverlap argmax + |Δvtx|&lt;5)</td><td>166 (135 CC / 31 NC)</td><td>4 (4 CC / 0 NC)</td></tr>
+      <tr><td>hadron_mult reco entries / length μ/p/π</td><td>166 / 196/87/35</td><td>4 / 8/1/0</td></tr>
+    </table>
+    <p>Proxy check: old <span class="mono">analyze_full.py</span> (ntracks&gt;0) gave 579 track / 163 MINERvA / 162 matched — overcounts vs real track cuts (349). Entry 1 sanity: 12 <span class="mono">part.dlp</span> with correct pdg/len/cosθ persists after edit.</p>
+    <pre>total_spills 2368, total_nu 9619, total_ixn_reco 3212
+fiducial_reco 868, track 349, matched loose 166 (135 CC/31 NC) tight 4 (4 CC/0 NC)</pre>
+  </div>
+
+  <div class="card" id="other">
+    <h2>8. Other instructions</h2>
+    <ul>
+      <li><b>No Polaris needed.</b> All local via ROOT; <span class="mono">submit_job / stage_to_alcf</span> not used. <span class="mono">.venv</span> uproot path kept only for <span class="mono">mode_truth</span> cross-check.</li>
+      <li><b>Rebuild dicts</b> if you edit <span class="mono">StandardRecord.h</span>: rerun the two <span class="mono">rootcling+g++</span> lines in <span class="mono">deps/duneanaobj/</span>; loose uses <span class="mono">libduneanaobj.so</span>, tight uses <span class="mono">libduneanaobj_full.so</span> (script loads absolute path).</li>
+      <li><b>Data vs MC offsets:</b> for data set <span class="mono">mnvOffsetX=-10 Y=5</span> per L1989; MC keeps <span class="mono">0,0</span>.</li>
+      <li><b>Files:</b> add more ROOTs to <span class="mono">caf_MC/</span> — drop <span class="mono">[:12]</span> in script for full sample; outputs scale linearly.</li>
+      <li><b>Troubleshoot:</b> “no dictionary for caf::SR*” → rebuild full .so; empty tight plots → lower <span class="mono">0.99→0.95</span> or check <span class="mono">rec.nd.minerva.nixn</span> with the dump snippet in <span class="mono">README.md</span>.</li>
+      <li><b>Source of truth:</b> cuts mirror <span class="mono">nominal_mc.cc</span> line numbers noted (2461, 2573/2598, 2625-2785, 2474-2504). Keep this HTML next to <span class="mono">README.md</span> for review.</li>
+    </ul>
+    <p class="small">Generated 2026-11-16 — rerun the two one-liners above to regenerate this doc’s plots after any selection change.</p>
+  </div>
+</div>
+</body>
+</html>

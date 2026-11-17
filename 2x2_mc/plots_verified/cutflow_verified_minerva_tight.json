@@ -1,0 +1,17 @@
+{
+  "total_spills": 2368,
+  "total_nu": 9619,
+  "total_ixn_reco": 3212,
+  "fiducial_reco": 868,
+  "fiducial_truth": 205,
+  "cc_fid": 4,
+  "nc_fid": 0,
+  "track": 349,
+  "minerva_tight": 4,
+  "minerva_loose": 295,
+  "matched": 4,
+  "hadron_mult_reco_entries": 4,
+  "length_reco_mu": 8,
+  "length_reco_p": 1,
+  "length_reco_pi": 0
+}

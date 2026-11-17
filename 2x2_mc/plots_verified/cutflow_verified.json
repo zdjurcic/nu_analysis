@@ -1,0 +1,16 @@
+{
+  "total_spills": 2368,
+  "total_nu": 9619,
+  "total_ixn_reco": 3212,
+  "fiducial_reco": 868,
+  "fiducial_truth": 205,
+  "cc_fid": 135,
+  "nc_fid": 31,
+  "track": 349,
+  "minerva": 349,
+  "matched": 166,
+  "hadron_mult_reco_entries": 166,
+  "length_reco_mu": 196,
+  "length_reco_p": 87,
+  "length_reco_pi": 35
+}

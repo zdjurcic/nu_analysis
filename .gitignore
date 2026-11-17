@@ -1,0 +1,14 @@
+# ROOT inputs — too large for GitHub, fetch via script
+2x2_mc/caf_MC/*.root
+2x2_mc/caf_MC/*.CAF.root
+2x2_data/caf_MC/*.root
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+# OS
+.DS_Store
+# Build artifacts (rebuild via rootcling)
+2x2_mc/deps/duneanaobj/G__StandardRecord*.cxx
