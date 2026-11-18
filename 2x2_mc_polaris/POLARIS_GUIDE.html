@@ -26,6 +26,23 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid 
 <div class="wrap">
 
 <div class="card">
+<div class="card" style="border-left:4px solid #ef4444">
+<h2>⚠️ Where is <span class="mono">$WORK</span> vs <span class="mono">$HOME/polaris_full</span>? (you just asked)</h2>
+<p><span class="mono">$WORK</span> is <b>not</b> a real top-level dir — it is an env var set by <span class="mono">env_polaris.sh</span> to <span class="mono">/home/zdjurcic/2x2</span> for your 2×2 analysis (different from the system <span class="mono">$WORK=/eagle</span> on some machines). If you do <span class="mono">ls $WORK</span> without sourcing, it expands to <span class="mono">ls /polaris_setup</span> → <span class="mono">No such file</span> — that is why you saw <span class="mono">ls: cannot access \'/lib/...\'</span> when <span class="mono">$INSTALL</span> was empty.</p>
+<pre># On Polaris login node as zdjurcic:
+export WORK=/home/zdjurcic/2x2          # set it, or:
+source $HOME/2x2/polaris_setup/env_polaris.sh  # sets WORK + LD_LIBRARY_PATH + proxy
+ls $WORK/polaris_setup/env_polaris.sh  # → $HOME/2x2/polaris_setup/env_polaris.sh (exists)
+ls $HOME/polaris_full/run_1000_full.py  # → $HOME/polaris_full/run_1000_full.py (also exists, different place)
+# Both are under /home/zdjurcic/ by design — they survive Eagle purges:
+#   $HOME/polaris_full/  = deck (scripts you staged from laptop)
+#   $WORK (= $HOME/2x2/) = env (root_env + duneanaobj/install)
+ls $WORK/root_env/bin/root              # → $HOME/2x2/root_env/bin/root (ROOT 6.40.04)
+ls $WORK/deps/duneanaobj/install/lib/libduneanaobj_StandardRecord.so  # Polaris-native dict
+</pre>
+</div>
+
+<div class="card">
 <div class="badge">Verified 2026-11-18 — 50 files: 9925 spills → 23 matched | 1000 files: 198460 spills → 499 matched</div>
 <h2>What you have on Polaris</h2>
 <table>
