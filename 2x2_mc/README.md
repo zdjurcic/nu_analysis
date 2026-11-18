@@ -60,3 +60,25 @@ length reco μ 196, p 87, π 35 (loose)
 
 Run: `python analyze_full.py` (uproot proxy, ~10s, no MINERvA-tight) — kept for reference.
 Verified runs are ~15s for 12 files via ROOT in `dune_root` (ROOT 6.40.04, conda).
+
+## Changing Event Selection
+
+Edit the 6 cuts at the top of `analyze_verified.py` / `analyze_verified_minerva.py` (and mirror to `polaris_full/run_*.py` via `sync_local_full.sh to_nu`):
+
+| Selection | Line to edit | Example |
+|-----------|--------------|---------|
+| **Fiducial** `5< |x|<59, 5< |z|<59.5, |y|<57` | `if not (abs(vx)>5 and abs(vx)<59 and abs(vz)>5 and abs(vz)<59.5 and abs(vy)<57):` | `5→10` tighter, `59→55` looser |
+| **Track** `primary && |start-vtx|<5 && len>3` | `minTrkLength=3.0` + `diff>5` + `abs(pdg) in (2212,13,211,321)` | `3.0→5.0` cm, `5→3` cm, drop `321` to exclude kaons |
+| **Hadron mult** `p/π/K` | `if abs(pdg) in (2212,211,321): hadron_mult+=1` | remove `321` for p/π only |
+| **MINERvA tight** `maxDot>0.99, |Δ|<15, |Δatan|<0.06` | `passes_minerva_tight()` → `maxDotDS>0.99` + `abs(extrapY)<15` + `angXdiff<0.06` | `0.99→0.995`, `15→10` |
+| **MC vs Data offset** | `mnvOffsetX=0; mnvOffsetY=0` | `-10,5` for data (L1989) |
+| **Truth match** `|Δvtx|<5` | `if abs(vx-tvx)<5 and ...` | `5→2` cm stricter |
+
+After edit:
+```bash
+/Users/zdjurcic/miniconda3/envs/dune_root/bin/python caf_analysis_code/local_full/analyze_verified_minerva.py
+open caf_analysis_code/local_full/plots_verified/hadron_mult_truth_vs_reco.png
+# For Polaris: stage_to_alcf(.../run_50_full.py → /home/zdjurcic/polaris_full/...) then submit_job with 30-min debug
+```
+
+See `../polaris_full/POLARIS_GUIDE.html` §5 and `PROMPTS.md` #9 for prompts to ask a model to edit and resubmit.
